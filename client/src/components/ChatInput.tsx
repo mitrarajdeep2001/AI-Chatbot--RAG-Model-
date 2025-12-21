@@ -26,17 +26,15 @@ const ALLOWED_TYPES = [
 
 const ChatInput = ({ onSend, onUpload, disabled }: Props) => {
   const [input, setInput] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<FilePreview | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleSend = () => {
-    if (!input.trim() && !selectedFile) return;
+    if (!input.trim()) return;
 
     onSend(input);
 
     setInput("");
-    setSelectedFile(null);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,14 +46,12 @@ const ChatInput = ({ onSend, onUpload, disabled }: Props) => {
       return;
     }
 
-    setSelectedFile(file);
     setFilePreview({ documentId: "", source: file.name });
     onUpload(file);
     e.target.value = "";
   };
 
   const handleRemoveFile = async (id: string) => {
-    setSelectedFile(null);
     setFilePreview(null);
     await deleteUploadedDocument(id);
   };

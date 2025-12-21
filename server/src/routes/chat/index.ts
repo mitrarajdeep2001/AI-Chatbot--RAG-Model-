@@ -21,7 +21,7 @@ export default async function (fastify: FastifyInstance) {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
-      "Access-Control-Allow-Origin": "http://localhost:5173",
+      "Access-Control-Allow-Origin": fastify.config.CLIENT_URL,
     });
 
     try {
