@@ -1,0 +1,29 @@
+services:
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: chroma
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+    restart: unless-stopped
+
+  server:
+    build: .
+    container_name: fastify-server
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - chroma
+    volumes:
+      - .:/app              # 🔥 THIS IS THE FIX
+      - /app/node_modules
+    restart: unless-stopped
+
+volumes:
+  chroma_data:
