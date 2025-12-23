@@ -25,11 +25,13 @@
     "@fastify/sensible": "^6.0.0",
     "@google/generative-ai": "^0.24.1",
     "@huggingface/inference": "^4.13.5",
+    "bullmq": "^5.66.2",
     "chromadb": "^3.1.8",
     "dotenv": "^17.2.3",
     "fastify": "^5.6.2",
     "fastify-cli": "^7.4.1",
     "fastify-plugin": "^5.0.0",
+    "ioredis": "^5.8.2",
     "langchain": "^1.2.0",
     "openai": "^6.13.0",
     "pdf-parse": "^2.4.5"

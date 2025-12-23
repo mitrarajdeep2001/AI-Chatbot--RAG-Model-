@@ -11,19 +11,5 @@ services:
       - ANONYMIZED_TELEMETRY=FALSE
     restart: unless-stopped
 
-  server:
-    build: .
-    container_name: fastify-server
-    ports:
-      - "3000:3000"
-    env_file:
-      - .env
-    depends_on:
-      - chroma
-    volumes:
-      - .:/app              # 🔥 THIS IS THE FIX
-      - /app/node_modules
-    restart: unless-stopped
-
 volumes:
   chroma_data:

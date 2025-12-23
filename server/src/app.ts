@@ -9,6 +9,7 @@ export interface AppOptions extends FastifyServerOptions, Partial<AutoloadPlugin
 }
 // Pass --options via CLI arguments in command to enable these options.
 const options: AppOptions = {
+  bodyLimit: 50 * 1024 * 1024, // 50 MB
 }
 
 const app: FastifyPluginAsync<AppOptions> = async (
