@@ -12,12 +12,16 @@
     "build:ts": "tsc",
     "watch:ts": "tsc -w",
     "dev": "npm run build:ts && concurrently -k -p \"[{name}]\" -n \"TypeScript,App\" -c \"yellow.bold,cyan.bold\" \"npm:watch:ts\" \"npm:dev:start\"",
-    "dev:start": "fastify start --ignore-watch=.ts$ -w -l info -P dist/app.js"
+    "dev:start": "fastify start --ignore-watch=.ts$ -w -l info -P dist/app.js",
+    "worker": "node dist/services/workers/ingestion.worker.js",
+    "dev:all": "npm run build:ts && concurrently -k -n \"API,WORKER\" -c \"cyan,magenta\" \"npm:dev:start\" \"npm:worker\""
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@bull-board/api": "^6.15.0",
+    "@bull-board/fastify": "^6.15.0",
     "@fastify/autoload": "^6.0.0",
     "@fastify/cors": "^11.2.0",
     "@fastify/env": "^5.0.3",

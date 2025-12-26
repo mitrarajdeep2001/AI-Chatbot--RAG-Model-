@@ -6,11 +6,12 @@ export interface EnvConfig {
   NODE_ENV: "development" | "production" | "test";
   GEMINI_API_KEY: string;
   VECTOR_DB_PATH: string;
+  HF_API_KEY: string;
 }
 
 export const envSchema: JSONSchemaType<EnvConfig> = {
   type: "object",
-  required: ["GEMINI_API_KEY"],
+  required: ["GEMINI_API_KEY", "HF_API_KEY"],
   properties: {
     PORT: {
       type: "number",
@@ -30,6 +31,9 @@ export const envSchema: JSONSchemaType<EnvConfig> = {
     VECTOR_DB_PATH: {
       type: "string",
       default: "./vector-store",
+    },
+    HF_API_KEY: {
+      type: "string",
     },
   },
 };

@@ -1,15 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { Paperclip, FileText, X } from "lucide-react";
-import type { ChatFile } from "../types/chat.ts";
+import { Paperclip, FileText, X, Send, CirclePause } from "lucide-react";
 import {
   deleteUploadedDocument,
   fetchUploadedDocument,
 } from "../services/apis/chat.ts";
 
 interface Props {
-  onSend: (message: string, file?: ChatFile) => void;
-  onUpload: (file: File) => void;
+  onSend: (message: string) => void;
+  onUpload: (file: File) => Promise<string>;
+  uploadProgress?: number | null;
+  docStatus?: "IDLE" | "UPLOADING" | "PROCESSING" | "READY" | "FAILED";
   disabled?: boolean;
+  setUploadProgress?: (p: number | null) => void;
+  setDocStatus?: (
+    status: "IDLE" | "UPLOADING" | "PROCESSING" | "READY" | "FAILED"
+  ) => void;
 }
 
 interface FilePreview {
@@ -24,20 +29,26 @@ const ALLOWED_TYPES = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
-const ChatInput = ({ onSend, onUpload, disabled }: Props) => {
+const ChatInput = ({
+  onSend,
+  onUpload,
+  uploadProgress = null,
+  docStatus = "IDLE",
+  disabled = false,
+  setUploadProgress,
+  setDocStatus,
+}: Props) => {
   const [input, setInput] = useState("");
   const [filePreview, setFilePreview] = useState<FilePreview | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const handleSend = () => {
-    if (!input.trim()) return;
-
+    if (!input.trim() || disabled) return;
     onSend(input);
-
     setInput("");
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -45,23 +56,35 @@ const ChatInput = ({ onSend, onUpload, disabled }: Props) => {
       alert("Only PDF, DOC, DOCX, and TXT files are allowed.");
       return;
     }
-
-    setFilePreview({ documentId: "", source: file.name });
-    onUpload(file);
+    // await handleRemoveFile(filePreview?.documentId || "");
+    const documentId = await onUpload(file);
+    setFilePreview({ documentId, source: file.name });
     e.target.value = "";
   };
 
   const handleRemoveFile = async (id: string) => {
-    setFilePreview(null);
-    await deleteUploadedDocument(id);
+    console.log(id, "id");
+
+    if (id) {
+      await deleteUploadedDocument(id);
+      setFilePreview(null);
+      setUploadProgress && setUploadProgress(null);
+      setDocStatus && setDocStatus("IDLE");
+    }
   };
 
+  // Restore previously uploaded document (on refresh)
   useEffect(() => {
     (async () => {
       const result = await fetchUploadedDocument();
+      if (!result.ok) return;
+
       const { data } = await result.json();
-      if (result.ok && data) {
-        setFilePreview({ documentId: data?.documentId || "", source: data?.source });
+      if (data) {
+        setFilePreview({
+          documentId: data.documentId,
+          source: data.source,
+        });
       }
     })();
   }, []);
@@ -75,14 +98,30 @@ const ChatInput = ({ onSend, onUpload, disabled }: Props) => {
             <FileText className="w-4 h-4 text-blue-600" />
             <span className="truncate max-w-50">{filePreview.source}</span>
           </div>
-          <button
-            type="button"
-            onClick={() => handleRemoveFile(filePreview.documentId)}
-            className="text-gray-500 hover:text-red-500 cursor-pointer"
-            title="Remove file"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="w-full flex gap-4 items-center justify-end">
+            {/* Upload / Processing Progress */}
+            {uploadProgress !== null && docStatus !== "IDLE" && (
+              <div className="mb-2 w-[50%]">
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1 text-center">
+                  {docStatus}
+                </p>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => handleRemoveFile(filePreview.documentId)}
+              className="text-gray-500 hover:text-red-500 cursor-pointer border p-1 rounded-full hover:bg-gray-100"
+              title="Remove file"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       )}
 
@@ -111,21 +150,26 @@ const ChatInput = ({ onSend, onUpload, disabled }: Props) => {
         {/* Text Input */}
         <input
           type="text"
-          placeholder="Ask a question..."
+          placeholder={
+            docStatus === "PROCESSING"
+              ? "Document is processing…"
+              : "Ask a question…"
+          }
           value={input}
           disabled={disabled}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-100"
         />
 
         {/* Send Button */}
         <button
           onClick={handleSend}
           disabled={disabled}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm
+                     hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Send
+          {disabled ? <CirclePause /> : <Send />}
         </button>
       </div>
     </div>

@@ -61,14 +61,38 @@ export const streamChat = async ({ message, setMessages }: StreamChatArgs) => {
   }
 };
 
-export const uploadFile = async (file: File) => {
-  const formData = new FormData();
-  formData.append("file", file);
-  await fetch(`${baseURL}/chat/upload`, {
-    method: "POST",
-    body: formData,
+// export const uploadFile = async (file: File) => {
+//   const formData = new FormData();
+//   formData.append("file", file);
+//   await fetch(`${baseURL}/chat/upload`, {
+//     method: "POST",
+//     body: formData,
+//   });
+// };
+
+export function uploadFile(file: File, onProgress: (p: number) => void) {
+  return new Promise<{ documentId: string }>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
+    formData.append("file", file);
+
+    xhr.upload.onprogress = (e) => {
+      if (Math.round((e.loaded / e.total) * 100) === 100) {
+        onProgress(20);
+      }
+    };
+
+    xhr.onload = () => resolve(JSON.parse(xhr.responseText));
+    xhr.onerror = reject;
+
+    xhr.open("POST", `${baseURL}/chat/upload`);
+    xhr.send(formData);
   });
-};
+}
+
+export async function pollStatus(documentId: string) {
+  return await fetch(`${baseURL}/chat/document/${documentId}/status`);
+}
 
 export const fetchChats = async () => {
   return await fetch(`${baseURL}/chat`);

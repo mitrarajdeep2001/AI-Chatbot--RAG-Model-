@@ -1,13 +1,25 @@
 export default function splitTextIntoChunks(
   text: string,
-  chunkSize = 800,
-  overlap = 150
+  chunkSize = 400,
+  overlap = 80
 ): string[] {
+  const cleanText = text
+    .replace(/\r/g, "")
+    .replace(/\n+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
   const chunks: string[] = [];
   let start = 0;
 
-  while (start < text.length) {
-    chunks.push(text.slice(start, start + chunkSize));
+  while (start < cleanText.length) {
+    const end = Math.min(start + chunkSize, cleanText.length);
+    const chunk = cleanText.slice(start, end).trim();
+
+    if (chunk.length > 50) {
+      chunks.push(chunk);
+    }
+
     start += chunkSize - overlap;
   }
 

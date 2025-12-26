@@ -1,13 +1,13 @@
 import { DocumentChunk } from "../../types";
 import { getCollection } from "./chroma.collection.service";
-import { embedText } from "./embedding.service";
+import embedTexts from "./embedding.service";
 
 export async function retrieveRelevantChunks(
   question: string,
   topK = 3
 ): Promise<DocumentChunk[]> {
   const collection = await getCollection();
-  const queryEmbedding = await embedText(question);
+  const [queryEmbedding] = await embedTexts([question], "query", 1);
 
   const results = await collection.query({
     queryEmbeddings: [queryEmbedding],
