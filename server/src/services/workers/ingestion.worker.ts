@@ -31,7 +31,7 @@ export const ingestionWorker = new Worker(
     } finally {
       // 🔹 Cleanup: Delete temp file
       try {
-        // await fs.unlink(filePath);
+        await fs.unlink(filePath);
       } catch (err) {
         console.error("Failed to delete temp file:", filePath, err);
       }
