@@ -1,16 +1,17 @@
 import { FastifyInstance } from "fastify";
-import {
-  deleteDocument,
-  listUploadedDocuments,
-  streamChatWithGemini,
-} from "../../services/chat";
-// import { ingestFile } from "../../services/helper/ingest.service";
+import { deleteDocument, listUploadedDocuments } from "../../services/chat";
 import { retrieveRelevantChunks } from "../../services/helper/retrieval.service";
 import { buildRagPrompt } from "../../services/helper/build-rag-prompt.service";
 import { ingestionQueue } from "../../services/queues/ingestion.queue";
 import { v4 as uuid } from "uuid";
 import fs from "fs/promises";
 import path from "path";
+import {
+  addChatMessage,
+  getChatHistory,
+  resetChat,
+} from "../../services/redis/chat.store";
+import { streamWithGeminiFallback } from "../../services/gemini/streamWithGeminiFallback";
 
 export default async function (fastify: FastifyInstance) {
   fastify.post("/stream", async (request, reply) => {
@@ -20,6 +21,8 @@ export default async function (fastify: FastifyInstance) {
       throw fastify.httpErrors.badRequest("Message is required");
     }
 
+    await addChatMessage({ role: "user", content: message });
+
     reply.hijack();
     reply.raw.writeHead(200, {
       "Content-Type": "text/event-stream",
@@ -28,15 +31,36 @@ export default async function (fastify: FastifyInstance) {
       "Access-Control-Allow-Origin": fastify.config.CLIENT_URL,
     });
 
+    let assistantMessage = "";
+
     try {
       const chunks = await retrieveRelevantChunks(message, 3);
       const prompt = buildRagPrompt(message, chunks);
-      await streamChatWithGemini(fastify, prompt, (chunk) => {
-        reply.raw.write(chunk);
-      });
-    } catch (err) {
-      fastify.log.error(err);
+
+      const { modelUsed } = await streamWithGeminiFallback(
+        fastify,
+        prompt,
+        (chunk) => {
+          assistantMessage += chunk;
+          reply.raw.write(chunk);
+        }
+      );
+
+      fastify.log.info(`Response generated using ${modelUsed}`);
+    } catch (err: any) {
+      if (err.status === 429) {
+        const msg =
+          "\n\n[System] All models are rate-limited. Please wait ~30 seconds.";
+        assistantMessage += msg;
+        reply.raw.write(msg);
+      } else {
+        const errMsg = "\n\n[System] An error occurred. Please try again.";
+        assistantMessage += errMsg;
+        fastify.log.error(err);
+        reply.raw.write("\n\n[System] Internal error occurred.");
+      }
     } finally {
+      await addChatMessage({ role: "assistant", content: assistantMessage });
       reply.raw.end();
     }
   });
@@ -87,7 +111,13 @@ export default async function (fastify: FastifyInstance) {
   });
 
   fastify.get("/", async function (request, reply) {
-    reply.send({ success: true, data: [] });
+    const data = await getChatHistory();
+    reply.send({ success: true, data });
+  });
+
+  fastify.delete("/", async function (request, reply) {
+    await resetChat();
+    reply.send({ success: true });
   });
 
   fastify.get("/document", async (request, reply) => {

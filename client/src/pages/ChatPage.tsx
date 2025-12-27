@@ -4,11 +4,13 @@ import ChatWindow from "../components/ChatWindow";
 import ChatInput from "../components/ChatInput";
 import type { ChatMessage } from "../types/chat";
 import {
+  deleteChat,
   fetchChats,
   pollStatus,
   streamChat,
   uploadFile,
 } from "../services/apis/chat.ts";
+import toast from "react-hot-toast";
 
 const ChatPage = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -39,7 +41,20 @@ const ChatPage = () => {
 
     setDocumentId(result.documentId);
     setDocStatus("PROCESSING");
-    return result.documentId
+    return result.documentId;
+  };
+
+  const resetChat = async () => {
+    const res = await deleteChat();
+    if (!res.ok) {
+      // handle error
+      return;
+    }
+    setMessages([]);
+    setDocumentId(null);
+    setDocStatus("IDLE");
+    setUploadProgress(null);
+    toast.success("Chat reset successfully");
   };
 
   const disableSend =
@@ -47,7 +62,11 @@ const ChatPage = () => {
 
   useEffect(() => {
     (async () => {
-      await fetchChats();
+      const res = await fetchChats();
+      const { data } = await res.json();
+      if (res.ok) {
+        setMessages(data);
+      }
     })();
   }, []);
 
@@ -79,7 +98,7 @@ const ChatPage = () => {
 
   return (
     <div className="h-screen flex flex-col">
-      <ChatHeader />
+      <ChatHeader onReset={resetChat} />
       <ChatWindow messages={messages} isLoading={isStreaming} />
       <ChatInput
         onSend={sendMessage}

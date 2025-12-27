@@ -218,6 +218,7 @@ const ChatInput = ({
           type="button"
           disabled={disabled}
           onClick={openFileDialog}
+          title="Insert File"
           className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 cursor-pointer"
         >
           <Paperclip className="w-5 h-5 text-gray-600" />
@@ -241,6 +242,7 @@ const ChatInput = ({
         <button
           onClick={handleSend}
           disabled={disabled}
+          title="Send Message"
           className="px-4 py-2 bg-blue-600 text-white rounded-lg
                      hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
         >

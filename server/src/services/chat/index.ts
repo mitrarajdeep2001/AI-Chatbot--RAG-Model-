@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { createGeminiClient } from "../helper/gemini.service";
+import { createGeminiClient } from "../gemini/gemini.service";
 import { getCollection } from "../helper/chroma.collection.service";
 
 export async function streamChatWithGemini(
@@ -10,7 +10,8 @@ export async function streamChatWithGemini(
   const genAI = createGeminiClient(fastify);
 
   const model = genAI.getGenerativeModel({
-    model: "gemini-3-flash-preview",
+    // model: "gemini-3-flash-preview",
+    model: "gemini-2.5-flash-lite",
   });
   const stream = await model.generateContentStream(prompt);
 

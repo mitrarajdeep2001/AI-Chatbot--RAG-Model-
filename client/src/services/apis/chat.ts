@@ -98,6 +98,12 @@ export const fetchChats = async () => {
   return await fetch(`${baseURL}/chat`);
 };
 
+export const deleteChat = async () => {
+  return await fetch(`${baseURL}/chat`, {
+    method: "DELETE",
+  });
+};
+
 export const fetchUploadedDocument = async () => {
   return await fetch(`${baseURL}/chat/document`);
 };
